@@ -24,6 +24,7 @@ import json
 from stuffs import *
 from time import gmtime, strftime
 
+import get_data
 
 # ====== Individual bot configuration ==========================
 bot_username = 'Creature Wise'
@@ -31,29 +32,43 @@ logfile_name = bot_username + ".log"
 
 # ==============================================================
 
+# Twitter authentication
+auth = tweepy.OAuthHandler(C_KEY, C_SECRET)
+auth.set_access_token(A_TOKEN, A_TOKEN_SECRET)
+api = tweepy.API(auth)
+
+
+
 class MyStreamListener(tweepy.StreamListener):
 
     def on_data(self, data):
-        print data
+        
+        status = json.loads(data)
+
+        screen_name = status["user"]["screen_name"]
+
+        status_content = status["text"].replace("@CreatureWise", "")
+
+        print
+        print "status", status_content
+        print
+
+        lon, lat, place = get_data.get_location(status_content)
+
+        print "Got coordinate", lon, lat, place
+        new_id = tweet_text(place, screen_name, status["id"], lat, lon)
+
+        tweet_media(lon, lat, screen_name, new_id)
+
         return True
 
     def on_error(self, status):
         print status
 
 
-def create_tweet():
-    """Create the text of the tweet you want to send."""
-    # Replace this with your code!
-    text = "Hello world!"
-    return text
 
-
-def tweet():
-    """Send out the text as a tweet."""
-    # Twitter authentication
-    auth = tweepy.OAuthHandler(C_KEY, C_SECRET)
-    auth.set_access_token(A_TOKEN, A_TOKEN_SECRET)
-    api = tweepy.API(auth)
+def listen():
+    
 
     myStreamListener = MyStreamListener()
 
@@ -61,24 +76,63 @@ def tweet():
 
     myStream.filter(track=['@CreatureWise'], async=True)
 
+
+def tweet_text(description, screen_name, tweet_id, lat, lon):
+    """Send out the text as a tweet."""
+
+   
+    text = "@%s Finding animals near %s"%( screen_name, description)
+
+    if len(text) > 140:
+        text = "@%s can you find a %s? There are %s species nearby, %s"%( screen_name, name,num_animals, url )
+
     # Send the tweet and log success or failure
-    # try:
-    #     # api.update_status(text)
+    try:
+        status = api.update_status(text, in_reply_to_status_id = tweet_id, lat = lat, lon = lon)
     #     # print myStream.filter(track=['@CreatureWise'], async=True)
-    # except tweepy.error.TweepError as e:
-    #     log(e.message)
-    # else:
-    #     log("Tweeted: " + text)
+    except tweepy.error.TweepError as e:
+        print e.message
+        log(e.message)
+    else:
+        log("Tweeted: " + text)
+
+
+    return status.id_str
+
+
+
+def tweet_media(lon, lat, screen_name, tweet_id):
+    """Send out the text as a tweet."""
+
+    # Get the data we are going to send
+    lsid, name, science_name, url, image_loc, num_animals = get_data.get_animal(lon, lat)
+
+    text = "@CreatureWise @%s can you find a %s (%s)? There are %s species nearby, %s"%( screen_name, name, science_name,num_animals, url )
+
+    if len(text) > 140:
+        text = "@CreatureWise @%s can you find a %s? There are %s species nearby, %s"%( screen_name, name,num_animals, url )
+
+    # Send the tweet and log success or failure
+    try:
+        api.update_with_media(image_loc, status=text, in_reply_to_status_id = tweet_id, lat = lat, lon = lon)
+    #     # print myStream.filter(track=['@CreatureWise'], async=True)
+    except tweepy.error.TweepError as e:
+        print e.message
+        log(e.message)
+    else:
+        log("Tweeted: " + text)
 
 
 def log(message):
     """Log message to logfile."""
-    path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    with open(os.path.join(path, logfile_name), 'a+') as f:
-        t = strftime("%d %b %Y %H:%M:%S", gmtime())
-        f.write("\n" + t + " " + message)
+    # path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    # with open(os.path.join(path, logfile_name), 'a+') as f:
+    #     t = strftime("%d %b %Y %H:%M:%S", gmtime())
+    #     f.write("\n" + t + " " + message)
 
 
 if __name__ == "__main__":
-    # tweet_text = create_tweet()
-    tweet()
+
+    # lon, lat, place = get_data.get_location(" Monterey")
+    # print lon, lat, place
+    listen()
