@@ -1,4 +1,4 @@
-# Copyright (c) 2015–2016 Molly White
+﻿# Copyright (c) 2015–2016 Molly White
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@
 
 import os
 import tweepy
+import json
 from stuffs import *
 from time import gmtime, strftime
 
@@ -29,6 +30,22 @@ bot_username = 'Creature Wise'
 logfile_name = bot_username + ".log"
 
 # ==============================================================
+
+class MyStreamListener(tweepy.StreamListener):
+
+    def on_status(self, status):
+        print status.text
+        if status.coordinates:
+            print 'coords:', status.coordinates
+        if status.place:
+            print 'place:', status.place.full_name
+
+        return True
+
+    on_event = on_status
+
+    def on_error(self, status):
+        print status
 
 
 def create_tweet():
@@ -45,9 +62,16 @@ def tweet(text):
     auth.set_access_token(A_TOKEN, A_TOKEN_SECRET)
     api = tweepy.API(auth)
 
+    myStreamListener = MyStreamListener()
+
+    myStream = tweepy.Stream(auth = api.auth, listener=myStreamListener)
+
+    myStream.filter(track=['@CreatureWise'], async=True)
+
     # Send the tweet and log success or failure
     try:
-        api.update_status(text)
+        # api.update_status(text)
+        # print myStream.filter(track=['@CreatureWise'], async=True)
     except tweepy.error.TweepError as e:
         log(e.message)
     else:
