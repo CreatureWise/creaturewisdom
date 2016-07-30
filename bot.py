@@ -33,16 +33,9 @@ logfile_name = bot_username + ".log"
 
 class MyStreamListener(tweepy.StreamListener):
 
-    def on_status(self, status):
-        print status.text
-        if status.coordinates:
-            print 'coords:', status.coordinates
-        if status.place:
-            print 'place:', status.place.full_name
-
+    def on_data(self, data):
+        print data
         return True
-
-    on_event = on_status
 
     def on_error(self, status):
         print status
@@ -55,7 +48,7 @@ def create_tweet():
     return text
 
 
-def tweet(text):
+def tweet():
     """Send out the text as a tweet."""
     # Twitter authentication
     auth = tweepy.OAuthHandler(C_KEY, C_SECRET)
@@ -64,18 +57,18 @@ def tweet(text):
 
     myStreamListener = MyStreamListener()
 
-    myStream = tweepy.Stream(auth = api.auth, listener=myStreamListener)
+    myStream = tweepy.Stream(api.auth, myStreamListener)
 
     myStream.filter(track=['@CreatureWise'], async=True)
 
     # Send the tweet and log success or failure
-    try:
-        # api.update_status(text)
-        # print myStream.filter(track=['@CreatureWise'], async=True)
-    except tweepy.error.TweepError as e:
-        log(e.message)
-    else:
-        log("Tweeted: " + text)
+    # try:
+    #     # api.update_status(text)
+    #     # print myStream.filter(track=['@CreatureWise'], async=True)
+    # except tweepy.error.TweepError as e:
+    #     log(e.message)
+    # else:
+    #     log("Tweeted: " + text)
 
 
 def log(message):
@@ -87,5 +80,5 @@ def log(message):
 
 
 if __name__ == "__main__":
-    tweet_text = create_tweet()
-    tweet(tweet_text)
+    # tweet_text = create_tweet()
+    tweet()
