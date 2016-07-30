@@ -43,22 +43,24 @@ class MyStreamListener(tweepy.StreamListener):
 
     def on_data(self, data):
         
-        status = json.loads(data)
+        try:
+            status = json.loads(data)
+            screen_name = status["user"]["screen_name"]
 
-        screen_name = status["user"]["screen_name"]
+            status_content = status["text"].replace("@CreatureWise", "")
 
-        status_content = status["text"].replace("@CreatureWise", "")
+            #Use google API to get the location finformation
+            lon, lat, place = get_data.get_location(status_content)
 
-        print
-        print "status", status_content
-        print
+            new_id = tweet_text(place, screen_name, status["id"], lat, lon)
 
-        lon, lat, place = get_data.get_location(status_content)
-
-        print "Got coordinate", lon, lat, place
-        new_id = tweet_text(place, screen_name, status["id"], lat, lon)
-
-        tweet_media(lon, lat, screen_name, new_id)
+            # Find animal information + tweet it
+            tweet_media(lon, lat, screen_name, status["id"])
+        except tweepy.error.TweepError as e:
+             log(e.message)
+        except:
+            pass
+            # api.update_stat us("@%s Sorry, an error has occured"%(screen_name), in_reply_to_status_id = status["id"])
 
         return True
 
@@ -68,8 +70,6 @@ class MyStreamListener(tweepy.StreamListener):
 
 
 def listen():
-    
-
     myStreamListener = MyStreamListener()
 
     myStream = tweepy.Stream(api.auth, myStreamListener)
@@ -106,16 +106,16 @@ def tweet_media(lon, lat, screen_name, tweet_id):
 
     # Get the data we are going to send
     lsid, name, science_name, url, image_loc, num_animals = get_data.get_animal(lon, lat)
+    print "Got animal information"
 
-    text = "@CreatureWise @%s can you find a %s (%s)? There are %s species nearby, %s"%( screen_name, name, science_name,num_animals, url )
+    text = "@%s can you find a %s (%s)? There are %s species nearby, %s"%( screen_name, name, science_name,num_animals, url )
 
     if len(text) > 140:
-        text = "@CreatureWise @%s can you find a %s? There are %s species nearby, %s"%( screen_name, name,num_animals, url )
+        text = "@%s can you find a %s?  There are %s species nearby, %s"%( screen_name, name,num_animals, url )
 
     # Send the tweet and log success or failure
     try:
         api.update_with_media(image_loc, status=text, in_reply_to_status_id = tweet_id, lat = lat, lon = lon)
-    #     # print myStream.filter(track=['@CreatureWise'], async=True)
     except tweepy.error.TweepError as e:
         print e.message
         log(e.message)
@@ -125,10 +125,10 @@ def tweet_media(lon, lat, screen_name, tweet_id):
 
 def log(message):
     """Log message to logfile."""
-    # path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    # with open(os.path.join(path, logfile_name), 'a+') as f:
-    #     t = strftime("%d %b %Y %H:%M:%S", gmtime())
-    #     f.write("\n" + t + " " + message)
+    path = os.path.realpath(os.getcwd())
+    with open(os.path.join(path, logfile_name), 'a+') as f:
+        t = strftime("%d %b %Y %H:%M:%S", gmtime())
+        f.write("\n" + t + " " + message)
 
 
 if __name__ == "__main__":
@@ -136,3 +136,5 @@ if __name__ == "__main__":
     # lon, lat, place = get_data.get_location(" Monterey")
     # print lon, lat, place
     listen()
+
+    # log("msg")
