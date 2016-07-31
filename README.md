@@ -1,3 +1,6 @@
-# twitterbot_framework
+# Creature Wise
 
-A basic framework for creating Twitter bots using Python 3 and [tweepy](http://www.tweepy.org). This goes along with my [tutorial](http://blog.mollywhite.net/twitter-bots-pt2/) on creating Twitter bots.
+This is a twitter bot that lets you know what Australian Wildlife is nearby. It is built using [The Atlas of Living Australia](https://www.ala.org.au/), Python and [tweepy](http://www.tweepy.org).
+
+This is a [govack2016 project](http://2016.hackerspace.govhack.org/content/creature-wise)
+
